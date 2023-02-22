@@ -3,13 +3,14 @@ import contextlib
 import io
 import logging
 import os
+import numpy as np
 from fvcore.common.timer import Timer
 from fvcore.common.file_io import PathManager
-
+from scipy.special import comb as n_over_k
 from detectron2.structures import BoxMode
-
+from shapely.geometry import Polygon
 from detectron2.data import DatasetCatalog, MetadataCatalog
-
+from itertools import chain
 """
 This file contains functions to parse COCO-format text annotations into dicts in "Detectron2 format".
 """
@@ -168,6 +169,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
             obj = {key: anno[key] for key in ann_keys if key in anno}
 
             segm = anno.get("segmentation", None)
+            #print(segm)
             if segm:  # either list[list[float]] or dict(RLE)
                 if not isinstance(segm, dict):
                     # filter out invalid polygons (< 3 points)
@@ -177,14 +179,56 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
                         continue  # ignore this instance
                 obj["segmentation"] = segm
 
+
             bezierpts = anno.get("bezier_pts", None)
             # Bezier Points are the control points for BezierAlign Text recognition (BAText)
+            #print(bezierpts)
             if bezierpts:  # list[float]
+                #print("beiz")
+                #print(bezierpts)
+                #print(len(bezierpts))
+                bezierpts = np.array(bezierpts)
+                Mtk = lambda n, t, k: t ** k * (1 - t) ** (n - k) * n_over_k(n, k)
+                BezierCoeff = lambda ts: [[Mtk(3, t, k) for k in range(4)] for t in ts]
+                assert (len(bezierpts) == 16), 'The numbr of bezier control points must be 8'
+                s1_bezier = bezierpts[:8].reshape((4, 2))
+                s2_bezier = bezierpts[8:].reshape((4, 2))
+                t_plot = np.linspace(0, 1, 8)#8 need to change
+                Bezier_top = np.array(BezierCoeff(t_plot)).dot(s1_bezier)
+                Bezier_bottom = np.array(BezierCoeff(t_plot)).dot(s2_bezier)
+                sampled_polygon = np.vstack((Bezier_top, Bezier_bottom))
+                #print(sampled_polygon)
+                #print(sampled_polygon.shape)
+                poly = list(chain.from_iterable(sampled_polygon))
+                #poly = Polygon(sampled_polygon)
+                #print(poly)
+
                 obj["beziers"] = bezierpts
+                obj["polygons"] = poly
+                segm = [bezierpts]
+                if not isinstance(segm, dict):
+                    # filter out invalid polygons (< 3 points)
+                    segm = [poly for poly in segm if len(poly) % 2 == 0 and len(poly) >= 6]
+                    if len(segm) == 0:
+                        num_instances_without_valid_segmentation += 1
+                        continue  # ignore this instance
+                obj["segmentation"] = segm
+                #print(segm)
 
             polypts = anno.get("polys", None)
             if polypts:
+                print("Polys")
+                print(polypts)
+                print(len(polypts))
                 obj["polygons"] = polypts
+                segm = [polypts]
+                if not isinstance(segm, dict):
+                    # filter out invalid polygons (< 3 points)
+                    segm = [poly for poly in segm if len(poly) % 2 == 0 and len(poly) >= 6]
+                    if len(segm) == 0:
+                        num_instances_without_valid_segmentation += 1
+                        continue  # ignore this instance
+                obj["segmentation"] = segm
 
             text = anno.get("rec", None)
             if text:
@@ -196,6 +240,8 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
             objs.append(obj)
         record["annotations"] = objs
         dataset_dicts.append(record)
+        #assert 1==0
+        #print(dataset_dicts)
 
     if num_instances_without_valid_segmentation > 0:
         logger.warning(
@@ -205,3 +251,4 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
             )
         )
     return dataset_dicts
+
