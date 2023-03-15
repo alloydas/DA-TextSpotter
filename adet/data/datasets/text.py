@@ -182,11 +182,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 
             bezierpts = anno.get("bezier_pts", None)
             # Bezier Points are the control points for BezierAlign Text recognition (BAText)
-            #print(bezierpts)
             if bezierpts:  # list[float]
-                #print("beiz")
-                #print(bezierpts)
-                #print(len(bezierpts))
                 bezierpts = np.array(bezierpts)
                 Mtk = lambda n, t, k: t ** k * (1 - t) ** (n - k) * n_over_k(n, k)
                 BezierCoeff = lambda ts: [[Mtk(3, t, k) for k in range(4)] for t in ts]
@@ -197,12 +193,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
                 Bezier_top = np.array(BezierCoeff(t_plot)).dot(s1_bezier)
                 Bezier_bottom = np.array(BezierCoeff(t_plot)).dot(s2_bezier)
                 sampled_polygon = np.vstack((Bezier_top, Bezier_bottom))
-                #print(sampled_polygon)
-                #print(sampled_polygon.shape)
                 poly = list(chain.from_iterable(sampled_polygon))
-                #poly = Polygon(sampled_polygon)
-                #print(poly)
-
                 obj["beziers"] = bezierpts
                 obj["polygons"] = poly
                 segm = [bezierpts]
@@ -218,8 +209,6 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
             polypts = anno.get("polys", None)
             if polypts:
                 print("Polys")
-                print(polypts)
-                print(len(polypts))
                 obj["polygons"] = polypts
                 segm = [polypts]
                 if not isinstance(segm, dict):
