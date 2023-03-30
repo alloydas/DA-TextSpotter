@@ -2,8 +2,6 @@ _BASE_: "Base-ICDAR15-Polygon.yaml"
 MODEL:
   NUMBER_OF_CHANNEL: [192, 384, 768]
   WEIGHTS: "output/TESTR/pretrain/TESTR_SWINT_Polygon_domain_agnostic/model_3459999.pth"
-  #RESNETS:
-  #  DEPTH: 50
   TRANSFORMER:
     NUM_FEATURE_LEVELS: 4
     INFERENCE_TH_TEST: 0.3
