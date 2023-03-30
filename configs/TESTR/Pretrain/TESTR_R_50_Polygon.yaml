@@ -2,9 +2,6 @@ _BASE_: "Base-Pretrain-Polygon.yaml"
 MODEL:
   NUMBER_OF_CHANNEL: [192, 384, 768]
   WEIGHTS: "swin_tiny_patch4_window7_224_22k.pth"
-  #WEIGHTS: "detectron2://ImageNetPretrained/torchvision/R-50.pkl"
-  #RESNETS:
-  #  DEPTH: 50
   TRANSFORMER:
     NUM_FEATURE_LEVELS: 4
     ENC_LAYERS: 6
