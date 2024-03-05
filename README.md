@@ -1,4 +1,4 @@
-#Diving into the Depths of Spotting Text in Multi-Domain Noisy Scenes
+# Diving into the Depths of Spotting Text in Multi-Domain Noisy Scenes
 
 Accepted in ICRA 2024
 
